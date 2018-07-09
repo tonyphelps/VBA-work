@@ -1,0 +1,151 @@
+Sub StockZapper()
+
+Dim ws As Worksheet
+
+For Each ws In ThisWorkbook.Worksheets
+
+Dim WorksheetName As String
+Dim Year As Integer
+
+WorksheetName = ws.Name
+
+'Initialize Title Cells
+ws.Cells(1, 9).Value = "Ticker"
+ws.Cells(1, 10).Value = "Yearly Change"
+ws.Cells(1, 11).Value = "Percent Change"
+ws.Cells(1, 12).Value = "Total Stock Volume"
+ws.Cells(2, 14).Value = "Greatest % Increase"
+ws.Cells(3, 14).Value = "Greatest % Decrease"
+ws.Cells(4, 14).Value = "Greatest Volume"
+ws.Cells(1, 15).Value = "Ticker"
+ws.Cells(1, 16).Value = "Value"
+
+'Format Percentage Based Columns
+ws.Columns("K").NumberFormat = "0.00%"
+ws.Range("P2: P3").NumberFormat = "0.00%"
+
+'Declare Variables
+Dim StockVolume As Double
+Dim StockTicker As String
+Dim Summary_Table_Row As Integer
+Dim LastRow As Long
+Dim StockOpen As Double
+Dim StockClose As Double
+Dim PercentChange As Double
+Dim YearlyChange As Double
+
+
+'Initialize Variables
+Summary_Table_Row = 2
+StockVolume = 0
+StockOpen = 0
+StockClose = 0
+PercentChange = 0
+YearlyChange = 0
+
+'Declare Last Row Count as Last Row Variable
+LastRow = ws.Cells(Rows.Count, 1).End(xlUp).Row
+
+'Loop up from the last row up and delete Rows with Zeros as Opening stock values
+ 'For n = LastRow To 2 Step -1
+        'If ws.Cells(n, 3).Value = 0 Then
+        'ws.Cells(n, 3).EntireRow.Delete
+        'End If
+'Next n
+'I didnt end up using this because I was able to figure out the nested loop
+'To find first non-Zero Value for stock opening price below VVVvvvVVv
+'Thanks for your help chris!
+
+'Loop down spread sheet to last row
+For i = 2 To LastRow
+'if ticker changes set OpenStock Variable and find first nonZero StockOpen Price
+    If ws.Cells(i - 1, 1).Value <> ws.Cells(i, 1).Value Then
+    StockOpen = ws.Cells(i, 3).Value
+    ElseIf ws.Cells(i, 3).Value = 0 Then
+    Do Until ws.Cells(i, 3).Value <> 0
+    i = i + 1
+    Loop
+    StockOpen = ws.Cells(i, 3).Value
+    End If
+
+'When ticker changes again set ticker value, closing stock value, and perfom % calculations
+    If ws.Cells(i + 1, 1).Value <> ws.Cells(i, 1).Value Then
+        StockTicker = ws.Cells(i, 1).Value
+        StockClose = ws.Cells(i, 6).Value
+        StockVolume = StockVolume + ws.Cells(i, 7).Value
+        YearlyChange = StockClose - StockOpen
+        PercentChange = (YearlyChange / StockOpen)
+
+'Populate rows with calculated stock data
+        ws.Range("I" & Summary_Table_Row).Value = StockTicker
+        ws.Range("J" & Summary_Table_Row).Value = YearlyChange
+        ws.Range("K" & Summary_Table_Row).Value = PercentChange
+        ws.Range("L" & Summary_Table_Row).Value = StockVolume
+
+    Summary_Table_Row = Summary_Table_Row + 1
+    StockVolume = 0
+
+    Else
+
+    StockVolume = StockVolume + ws.Cells(i, 7).Value
+
+    End If
+
+Next i
+
+'Delcare Next Set of Values for Hard Section
+Dim GreatestInc As Double
+Dim GreatestDec As Double
+Dim GreatestVolume As Double
+Dim TickerWinner As String
+Dim TickerLooser As String
+Dim VolumeWinner As String
+
+'Initialize Variables
+GreatestInc = 0
+GreatestDec = 0
+GreatestVolume = 0
+
+'Set LastRow Variable
+LastRowHard = ws.Cells(Rows.Count, 11).End(xlUp).Row
+
+'Loop down Rows
+For j = 2 To LastRowHard
+'Find the highest percentage change
+    If ws.Cells(j, 11).Value > GreatestInc Then
+    GreatestInc = ws.Cells(j, 11).Value
+    TickerWinner = ws.Cells(j, 9).Value
+ 'Find the greatest percentage decrease
+    ElseIf ws.Cells(j, 11).Value < GreatestDec Then
+    GreatestDec = ws.Cells(j, 11).Value
+    TickerLooser = ws.Cells(j, 9).Value
+  'Find the greatest stock volume
+    ElseIf ws.Cells(j, 12).Value > GreatestVolume Then
+    GreatestVolume = ws.Cells(j, 12).Value
+    VolumeWinner = ws.Cells(j, 9).Value
+
+Else
+End If
+Next j
+
+'Populate calulated values in spread sheet
+ws.Cells(2, 15).Value = TickerWinner
+ws.Cells(2, 16).Value = GreatestInc
+ws.Cells(3, 15).Value = TickerLooser
+ws.Cells(3, 16).Value = GreatestDec
+ws.Cells(4, 15).Value = VolumeWinner
+ws.Cells(4, 16).Value = GreatestVolume
+
+'Apply conditional formating to yearly change column
+For h = 2 To ws.Cells(Rows.Count, 10).End(xlUp).Row
+    If ws.Cells(h, 10).Value > 0 Then
+    ws.Cells(h, 10).Interior.ColorIndex = 4
+    Else: ws.Cells(h, 10).Interior.ColorIndex = 3
+    End If
+Next h
+
+Next ws
+
+'Go to sleep
+End Sub
+
